@@ -1,0 +1,246 @@
+<!-- Article -->
+<article class="container mx-auto px-4 py-8" itemscope itemtype="http://schema.org/BlogPosting">
+  <div class="max-w-3xl mx-auto">
+    {% for block in section.blocks %}
+      {% case block.type %}
+        {% when 'article_title' %}
+          <header class="text-center mb-12">
+            <a
+              class="inline-block text-sm uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors duration-300 mb-4"
+              href="{{ blog.url }}"
+            >
+              {{ blog.title }}
+            </a>
+            <h1 class="text-4xl md:text-6xl font-medium leading-tight" itemprop="headline">{{ article.title }}</h1>
+          </header>
+
+        {% when 'article_author' %}
+          <div class="flex justify-center space-x-4 text-gray-600 mb-8" itemscope itemtype="http://schema.org/Person">
+            {% if article.author and section.settings.show_author %}
+              <span class="text-sm" itemprop="author">{{- article.author -}}</span>
+            {% endif %}
+          </div>
+        {% when 'article_date' %}
+          {% if article.published_at and section.settings.show_date %}
+            <time
+              class="text-sm"
+              datetime="{{ article.published_at | date: '%Y-%m-%d' }}"
+              itemprop="datePublished dateCreated"
+            >
+              {{ article.published_at | date: '%B %d, %Y' }}
+            </time>
+          {% endif %}
+
+        {% when 'featured_image' %}
+          {% if article.image %}
+            <div class="mb-12" itemprop="image">
+              <img
+                src="{{ article.image | image_url: width: 1400 }}"
+                alt="{{ article.image.alt | escape }}"
+                class="w-full h-auto rounded-xl"
+                loading="lazy"
+                width="1400"
+                height="{{ article.image.height | divided_by: article.image.width | times: 1400 | round }}"
+              >
+            </div>
+          {% else %}
+            {% assign placeholder_image = 'lifestyle-2' %}
+            {{ placeholder_image | placeholder_svg_tag: 'w-full h-80 md:h-95 object-cover object-center p-5' }}
+          {% endif %}
+
+        {% when 'article_content' %}
+          <div class="prose max-w-none" itemprop="articleBody">
+            {{ article.content }}
+          </div>
+
+        {% else %}
+          {{ block.type }}
+      {% endcase %}
+    {% endfor %}
+  </div>
+</article>
+
+{% if blog.comments_enabled? %}
+  <!-- Comments -->
+  <div id="comments" class="my-8">
+    {% if article.comments_count > 0 %}
+      <div class="flex-1 items-center justify-center mx-auto max-w-4xl px-4">
+        <h1 class="text-lg font-medium mb-4">See what people are saying</h1>
+        <h1 class="text-lg font-medium mb-4">{{ article.comments_count }} Comments</h1>
+        {% paginate article.comments by 5 %}
+          {% for comment in article.comments %}
+            <div class="flex-1 border my-4 px-4 py-2 sm:px-6 sm:py-4 leading-relaxed">
+              <span class="comment-author">{{ comment.author }}</span>
+              <span class="text-xs text-gray-400">{{ comment.created_at | date: format: 'default' }}</span>
+              <p class="text-sm">{{ comment.content }}</p>
+            </div>
+          {% endfor %}
+          {% if paginate.pages > 1 %}
+            {{ paginate | default_pagination }}
+          {% endif %}
+        {% endpaginate %}
+      </div>
+    {% else %}
+      <h2 class="text-2xl font-medium mb-4 mx-auto w-full text-center">No Comments in this article</h2>
+    {% endif %}
+  </div>
+
+  <!-- Comment Form -->
+  <div id="comment-form" class="mb-8">
+    <h2 class="text-2xl font-medium mb-4 mx-auto w-full text-center">Add a comment</h2>
+    {% form 'new_comment', article %}
+      <div class="flex-1 mx-auto items-center justify-center max-w-4xl px-4">
+        {% if form.errors %}
+          <div class="border p-5">
+            <div class="flex flex-row items-center w-full my-3">
+              <div class="text-red-500">
+                {% render 'icon-failed' %}
+              </div>
+              <div class="text-sm font-medium ml-3">Oh no, your comment was not posted. Please try again.</div>
+            </div>
+            <ul class="px-4 mb-3 ml-7 list-decimal">
+              {% for error in form.errors %}
+                <li>
+                  <span class="font-medium">{{ form.errors.messages[error] }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% elsif form.posted_successfully? %}
+          <div class="flex flex-row items-center w-full my-3 p-5">
+            <div class="text-green-500">
+              {% render 'icon-success' %}
+            </div>
+            <div class="text-sm font-medium ml-3">Comment posted successfully</div>
+          </div>
+        {% endif %}
+
+        <div class="px-1 md:flex mb-3">
+          <div class="px-3 md:w-1/2">
+            <label class="text-gray-700 font-medium text-xs mb-2 block" for="comment_author">Name</label>
+            <input
+              type="text"
+              name="comment[author]"
+              id="comment_author"
+              class="w-full text-gray-700 border py-3 px-4 mb-3 focus:outline-none"
+              placeholder="Jane Doe"
+              required
+            >
+          </div>
+          <div class="px-3 md:w-1/2">
+            <label class="text-gray-700 font-medium text-xs mb-2 block" for="comment_email">Email</label>
+            <input
+              type="email"
+              name="comment[email]"
+              id="comment_email"
+              class="w-full text-gray-700 border py-3 px-4 mb-3 focus:outline-none"
+              placeholder="jane@doe.com"
+              required
+            >
+          </div>
+        </div>
+        <div class="px-1 md:flex mb-3">
+          <div class="px-3 md:w-full">
+            <label class="text-gray-700 font-medium text-xs mb-2 block" for="comment_body">Comment</label>
+            <textarea
+              name="comment[body]"
+              id="comment_body"
+              class="w-full text-gray-700 border py-3 px-4 mb-3 focus:outline-none resize-none h-20"
+              placeholder="Your comment here..."
+              required
+            ></textarea>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <input
+            type="submit"
+            class="w-full cursor-pointer bg-gray-700 py-3 px-4 text-base font-medium text-white hover:bg-gray-900 transition-colors duration-300"
+            value="Post Comment"
+          >
+        </div>
+      </div>
+    {% endform %}
+  </div>
+{% endif %}
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BlogPosting",
+    "headline": {{ article.title | json }},
+    "author": {
+      "@type": "Person",
+      "name": {{ article.author | json }}
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": {{ shop.name | json }}
+    },
+    "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    "dateCreated": {{ article.created_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    {% if article.image %}
+    "image": {
+      "@type": "ImageObject",
+      "url": {{ article.image | image_url: width: 1200 | json }},
+      "width": 1200,
+      "height": {{ article.image.height | times: 1200.0 | divided_by: article.image.width | round | json }}
+    },
+    {% endif %}
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": {{ article.url | json }}
+    },
+    {% if article.excerpt != blank %}
+    "description": {{ article.excerpt | strip_html | strip_newlines | truncatewords: 155 | json }},
+    {% endif %}
+    "articleBody": {{ article.content | strip_html | json }}
+  }
+</script>
+
+{% schema %}
+{
+  "name": "Template Article",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "Show author",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "featured_image",
+      "name": "Featured Image",
+      "limit": 1
+    },
+    {
+      "type": "article_author",
+      "name": "Article Author",
+      "limit": 1
+    },
+    {
+      "type": "article_date",
+      "name": "Article Date",
+      "limit": 1
+    },
+    {
+      "type": "article_title",
+      "name": "Article Title",
+      "limit": 1
+    },
+    {
+      "type": "article_content",
+      "name": "Article Content",
+      "limit": 1
+    }
+  ]
+}
+{% endschema %}
